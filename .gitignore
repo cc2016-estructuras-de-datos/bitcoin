@@ -1,0 +1,147 @@
+# ============================================
+# GRADLE (Java Build Tool)
+# ============================================
+.gradle/
+.gradletasknamecache
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ============================================
+# COMPILACIÓN Y EMPAQUETADO JAVA
+# ============================================
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+target/
+dist/
+
+# ============================================
+# INTELLIJ IDEA
+# ============================================
+.idea/
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/misc.xml
+.idea/vcs.xml
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# ============================================
+# ECLIPSE
+# ============================================
+.apt_generated
+.apt_generated_tests
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+# ============================================
+# NETBEANS
+# ============================================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+nbactions.xml
+
+# ============================================
+# VS CODE
+# ============================================
+.vscode/
+*.code-workspace
+.history/
+
+# ============================================
+# SUBLIME TEXT
+# ============================================
+*.sublime-workspace
+*.sublime-project
+
+# ============================================
+# WINDOWS
+# ============================================
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================================
+# MAC OS
+# ============================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============================================
+# LINUX
+# ============================================
+.directory
+
+# ============================================
+# ARCHIVOS TEMPORALES Y DE CACHÉ
+# ============================================
+*.tmp
+*.swp
+*.swo
+*~
+.#*
+*.cache
+.cache/
+*.log
+logs/
+tmp/
+
+# ============================================
+# DEPENDENCIAS Y LIBRERÍAS
+# ============================================
+*.pom
+/lib/
+/libs/
+/dependencies/
+
+# ============================================
+# ARCHIVOS DE SISTEMA DE VERSIÓN
+# ============================================
+.hg/
+.git/
+.gitmodules
+
+# ============================================
+# MAVEN (si se usa simultáneamente)
+# ============================================
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# ============================================
+# OTROS
+# ============================================
+.env
+.env.local
+debug.log
+*.pid
+*.seed
