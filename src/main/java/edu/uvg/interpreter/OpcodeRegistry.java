@@ -50,7 +50,7 @@ public class OpcodeRegistry {
      */
     private void registerAll() {
 
-        // ── Datos y literales (Franco) ─────────────────────────────────
+        // Datos y literales
         registry.put(OpcodeType.OP_0,       DataOpcodes.opFalse());
         registry.put(OpcodeType.OP_FALSE,   DataOpcodes.opFalse());
         registry.put(OpcodeType.OP_1,       DataOpcodes.opTrue());
@@ -77,13 +77,13 @@ public class OpcodeRegistry {
         registry.put(OpcodeType.OP_SWAP,    StackOpcodes.opSwap());
         registry.put(OpcodeType.OP_OVER,    StackOpcodes.opOver());
 
-        // ── Control de flujo (Franco) ──────────────────────────────────
+        //  Control de flujo
         registry.put(OpcodeType.OP_VERIFY,  ControlOpcodes.opVerify());
         registry.put(OpcodeType.OP_RETURN,  ControlOpcodes.opReturn());
         // OP_IF / OP_NOTIF / OP_ELSE / OP_ENDIF: manejados directamente
         // por ScriptInterpreter
 
-        // ── Comparación y criptografía  ─────────────────────────
+        // Comparación y criptografía
         registry.put(OpcodeType.OP_EQUAL,        CryptoComparisonOpcodes.opEqual());
         registry.put(OpcodeType.OP_EQUALVERIFY,  CryptoComparisonOpcodes.opEqualVerify());
         registry.put(OpcodeType.OP_HASH160,      CryptoComparisonOpcodes.opHash160());
