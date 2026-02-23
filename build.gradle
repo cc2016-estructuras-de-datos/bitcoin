@@ -10,11 +10,15 @@ repositories {
 }
 
 dependencies {
+    // JUnit 5
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
 
+    // BouncyCastle (RIPEMD-160)
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
+    testImplementation 'org.bouncycastle:bcprov-jdk18on:1.78'
+}
 test {
     useJUnitPlatform()
 }

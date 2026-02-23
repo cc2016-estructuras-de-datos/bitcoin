@@ -1,5 +1,6 @@
 package edu.uvg.interpreter;
 
+import edu.uvg.BaseTest;
 import edu.uvg.model.ScriptToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests de integración del intérprete completo.
  * Cada test construye un script real, lo parsea y lo ejecuta.
  */
-class ScriptInterpreterTest {
+class ScriptInterpreterTest extends BaseTest {
 
     private ScriptParser parser;
 

@@ -1,5 +1,6 @@
 package edu.uvg.opcodes;
 
+import edu.uvg.BaseTest;
 import edu.uvg.exceptions.EmptyStackException;
 import edu.uvg.exceptions.ScriptExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +12,7 @@ import java.util.Deque;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Tests para CryptoComparisonOpcodes: OP_EQUAL, OP_EQUALVERIFY, OP_HASH160, OP_CHECKSIG. */
-class CryptoComparisonOpcodesTest {
+class CryptoComparisonOpcodesTest extends BaseTest {
 
     private Deque<byte[]> stack;
 
@@ -55,8 +56,8 @@ class CryptoComparisonOpcodesTest {
 
     @Test
     void opEqualVerify_sameValues_doesNotThrow() {
-        stack.push(new byte[]{0xAB});
-        stack.push(new byte[]{0xAB});
+        stack.push(new byte[]{(byte) 0xAB});
+        stack.push(new byte[]{(byte) 0xAB});
         assertDoesNotThrow(
                 () -> CryptoComparisonOpcodes.opEqualVerify().execute(stack, null));
         assertTrue(stack.isEmpty()); // los dos elementos fueron consumidos
@@ -124,7 +125,7 @@ class CryptoComparisonOpcodesTest {
 
     @Test
     void opCheckSigMock_nonEmptyFirmaAndKey_pushesTrue() throws Exception {
-        stack.push(new byte[]{0x02, 0xAB}); // pubKey
+        stack.push(new byte[]{0x02, (byte) 0xAB}); // pubKey
         stack.push(new byte[]{0x30, 0x45}); // firma
         CryptoComparisonOpcodes.opCheckSigMock().execute(stack, null);
         assertArrayEquals(new byte[]{1}, stack.pop());
@@ -132,7 +133,7 @@ class CryptoComparisonOpcodesTest {
 
     @Test
     void opCheckSigMock_emptySignature_pushesFalse() throws Exception {
-        stack.push(new byte[]{0x02, 0xAB}); // pubKey
+        stack.push(new byte[]{0x02, (byte) 0xAB}); // pubKey
         stack.push(new byte[0]);             // firma vacía
         CryptoComparisonOpcodes.opCheckSigMock().execute(stack, null);
         assertArrayEquals(new byte[0], stack.pop());
