@@ -7,6 +7,7 @@ import edu.uvg.model.ScriptElement;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 /**
@@ -73,6 +74,17 @@ public class EvaluationStack {
             throw new EmptyStackException(caller);
         }
         return stack.peek().clone();
+    }
+
+    /**
+     * Retorna la referencia al Deque interno.
+     * El ScriptInterpreter pasa este Deque a los handlers; todas las
+     * operaciones sobre él se reflejan en esta pila directamente.
+     *
+     * @return el ArrayDeque interno
+     */
+    public Deque<byte[]> getInternalDeque() {
+        return stack;
     }
 
     /**
