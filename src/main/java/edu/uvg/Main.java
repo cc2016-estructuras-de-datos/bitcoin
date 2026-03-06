@@ -10,25 +10,16 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Punto de entrada del intérprete de Bitcoin Script.
+ * Punto de entrada del intérprete de Bitcoin Script — Fase 2.
  *
- * ejecuta la prueba P2PKH requerida por la Fase 1:
- *
- *   scriptSig:    <firma>  <pubKey>
- *   scriptPubKey: OP_DUP  OP_HASH160  <pubKeyHash>  OP_EQUALVERIFY  OP_CHECKSIG
+ * Demostraciones obligatorias:
+ *   a. P2PKH correcto e incorrecto
+ *   b. Condicional con OP_IF / OP_ELSE / OP_ENDIF (anidado)
+ *   c. (Avanzado) Multisig 2-de-3 con OP_CHECKMULTISIG (mock)
  *
  * Uso:
- *   java Main          → ejecuta la prueba P2PKH sin traza
- *   java Main --trace  → ejecuta la prueba P2PKH con traza de la pila
- *
- * nota sobre OP_HASH160 en la simulación:
- *   Dado que CryptoComparisonOpcodes.opHash160() usa SHA-256 + RIPEMD-160 reales,
- *   el pubKeyHash del scriptPubKey debe ser exactamente el HASH160 del <pubKey>
- *   que se ingresa en el scriptSig. Para esta prueba, ambos valores se generan
- *   programáticamente para que el test sea consistente.
- *
- * @author Franco
- * @version 1.0
+ *   java Main          → ejecuta todas las demostraciones sin traza
+ *   java Main --trace  → ejecuta todas las demostraciones con traza de pila
  */
 public class Main {
 
@@ -36,108 +27,168 @@ public class Main {
         Security.addProvider(new BouncyCastleProvider());
         boolean traceMode = args.length > 0 && args[0].equals("--trace");
 
-        System.out.println("══════════════════════════════════════════════════════");
-        System.out.println("  Proyecto #1 — Intérprete de Bitcoin Script | UVG");
-        System.out.println("  Autores: Franco, Weslly, Sipac");
-        System.out.println("══════════════════════════════════════════════════════");
-        System.out.println();
+        printHeader();
 
-        // ── Prueba 1: P2PKH válido ──────────────────────────────────────
-        System.out.println("▶ PRUEBA 1: P2PKH — Transacción VÁLIDA");
-        System.out.println("─────────────────────────────────────────────────────");
+        // ══════════════════════════════════════════════════════
+        //  BLOQUE A: P2PKH
+        // ══════════════════════════════════════════════════════
+
+        section("A", "P2PKH — Transacción VÁLIDA (hash correcto)");
         runP2PKH(traceMode, true);
 
-        System.out.println();
-
-        // ── Prueba 2: P2PKH inválido (hash incorrecto) ──────────────────
-        System.out.println("▶ PRUEBA 2: P2PKH — Hash Incorrecto (debe FALLAR)");
-        System.out.println("─────────────────────────────────────────────────────");
+        section("A", "P2PKH — Transacción INVÁLIDA (hash incorrecto)");
         runP2PKH(traceMode, false);
 
-        System.out.println();
+        // ══════════════════════════════════════════════════════
+        //  BLOQUE B: Condicionales
+        // ══════════════════════════════════════════════════════
 
-        // ── Prueba 3: Script simple con OP_1 ───────────────────────────
-        System.out.println("▶ PRUEBA 3: Script simple — OP_1 (debe ser VÁLIDO)");
-        System.out.println("─────────────────────────────────────────────────────");
-        runSimpleScript(traceMode, Arrays.asList("OP_1"));
+        section("B", "OP_IF simple — condición TRUE (debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList(
+            "OP_1", "OP_IF", "OP_1", "OP_ENDIF"
+        ));
 
-        System.out.println();
+        section("B", "OP_IF / OP_ELSE — condición FALSE (rama ELSE, debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList(
+            "OP_0", "OP_IF", "OP_0", "OP_ELSE", "OP_1", "OP_ENDIF"
+        ));
 
-        // ── Prueba 4: OP_0 → debe FALLAR ──────────────────────────────
-        System.out.println("▶ PRUEBA 4: Script simple — OP_0 (debe FALLAR)");
-        System.out.println("─────────────────────────────────────────────────────");
-        runSimpleScript(traceMode, Arrays.asList("OP_0"));
+        section("B", "OP_IF anidado — outer TRUE, inner FALSE → rama ELSE inner (debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList(
+            "OP_1", "OP_IF",
+                "OP_0", "OP_IF",
+                    "OP_0",
+                "OP_ELSE",
+                    "OP_1",
+                "OP_ENDIF",
+            "OP_ENDIF"
+        ));
 
-        System.out.println();
+        section("B", "OP_NOTIF — condición FALSE entra al bloque (debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList(
+            "OP_0", "OP_NOTIF", "OP_1", "OP_ENDIF"
+        ));
 
-        // ── Prueba 5: OP_DUP + OP_EQUAL ────────────────────────────────
-        System.out.println("▶ PRUEBA 5: OP_DUP + OP_EQUAL (debe ser VÁLIDO)");
-        System.out.println("─────────────────────────────────────────────────────");
-        runSimpleScript(traceMode, Arrays.asList("01", "OP_DUP", "OP_EQUAL"));
+        section("B", "Condicional con aritmética — 5 > 3 → OP_IF (debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList(
+            "05", "03", "OP_GREATERTHAN",
+            "OP_IF", "OP_1", "OP_ELSE", "OP_0", "OP_ENDIF"
+        ));
+
+        // ══════════════════════════════════════════════════════
+        //  BLOQUE C: Multisig 2-de-3 (avanzado)
+        // ══════════════════════════════════════════════════════
+
+        section("C", "Multisig 2-de-3 — 2 firmas VÁLIDAS (debe ser VÁLIDO)");
+        runMultisig(traceMode, true, false);
+
+        section("C", "Multisig 2-de-3 — 1 firma vacía (debe FALLAR)");
+        runMultisig(traceMode, false, false);
+
+        section("C", "Multisig 2-de-3 — todas las claves vacías (debe FALLAR)");
+        runMultisig(traceMode, true, true);
+
+        // ══════════════════════════════════════════════════════
+        //  EXTRAS: opcodes nuevos Fase 2
+        // ══════════════════════════════════════════════════════
+
+        section("Extra", "OP_ADD — 3 + 4 = 7 (no cero → debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList("03", "04", "OP_ADD"));
+
+        section("Extra", "OP_SUB — 5 - 5 = 0 (cero → debe FALLAR)");
+        runSimpleScript(traceMode, Arrays.asList("05", "05", "OP_SUB"));
+
+        section("Extra", "OP_NOT — NOT(0) = 1 (debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList("OP_0", "OP_NOT"));
+
+        section("Extra", "OP_SHA256 — hash de <data> (no vacío → debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList("<data>", "OP_SHA256"));
+
+        section("Extra", "OP_HASH256 — doble SHA256 de <data> (debe ser VÁLIDO)");
+        runSimpleScript(traceMode, Arrays.asList("<data>", "OP_HASH256"));
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    //  Demostraciones
+    // ─────────────────────────────────────────────────────────────────
+
     /**
-     * Ejecuta la prueba principal P2PKH.
-     *
-     * Para que la prueba sea coherente, el pubKeyHash que va en el
-     * scriptPubKey debe ser el HASH160 real de la pubKey del scriptSig.
-     *
-     * En esta simulación:
-     *   - <pubKey> es el string "<pubKey>" convertido a bytes UTF-8.
-     *   - Su HASH160 se computa en tiempo de ejecución dentro de OP_HASH160.
-     *   - Por eso, en el scriptPubKey, pasamos la misma pubKey como dato
-     *     auxiliar y pre-computamos el hash con el mismo algoritmo.
-     *
-     * @param traceMode si mostrar traza de la pila
-     * @param valid     si generar un hash correcto (valid=true) o incorrecto
+     * Ejecuta la prueba P2PKH.
+     * valid=true  → usa el hash160 real de la pubKey (transacción válida).
+     * valid=false → usa un hash incorrecto (transacción inválida).
      */
     private static void runP2PKH(boolean traceMode, boolean valid) {
-
-        // Datos mock del scriptSig
         String firma  = "<firma>";
         String pubKey = "<pubKey>";
 
-        // Hash160 de la clave pública
         String pubKeyHash;
         if (valid) {
-            pubKeyHash = computeHash160Hex(pubKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            pubKeyHash = computeHash160Hex(
+                pubKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } else {
-            // Hash incorrecto: cualquier valor distinto
-            pubKeyHash = "deadbeefdeadbeefdeadbeef00000000deadbeef";
+            pubKeyHash = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
         }
 
-        // Script completo = scriptSig + scriptPubKey
-        List<String> script = Arrays.asList(
-            //  scriptSig (lo que provee quien gasta)
-            firma,
-            pubKey,
-            // scriptPubKey (el candado del output)
-            "OP_DUP",
-            "OP_HASH160",
-            pubKeyHash,
-            "OP_EQUALVERIFY",
-            "OP_CHECKSIG"
-        );
-
         System.out.println("  scriptSig:    " + firma + " " + pubKey);
-        System.out.println("  scriptPubKey: OP_DUP OP_HASH160 " +
-                pubKeyHash.substring(0, 8) + "... OP_EQUALVERIFY OP_CHECKSIG");
+        System.out.println("  scriptPubKey: OP_DUP OP_HASH160 "
+                + pubKeyHash.substring(0, 8) + "... OP_EQUALVERIFY OP_CHECKSIG");
         System.out.println();
 
-        runSimpleScript(traceMode, script);
+        runSimpleScript(traceMode, Arrays.asList(
+            firma, pubKey,
+            "OP_DUP", "OP_HASH160", pubKeyHash, "OP_EQUALVERIFY", "OP_CHECKSIG"
+        ));
     }
 
     /**
-     * Parsea y ejecuta un script arbitrario.
+     * Ejecuta la demostración de Multisig 2-de-3.
      *
-     * @param traceMode si mostrar traza
-     * @param tokens    los tokens del script
+     * @param traceMode     si mostrar traza de pila
+     * @param validSigs     si las firmas son válidas (no vacías)
+     * @param emptyKeys     si las claves públicas son vacías (fuerza fallo)
+     */
+    private static void runMultisig(boolean traceMode,
+                                     boolean validSigs,
+                                     boolean emptyKeys) {
+
+        byte[] sig1 = validSigs ? new byte[]{0x30, 0x44} : new byte[0];
+        byte[] sig2 = validSigs ? new byte[]{0x30, 0x45} : new byte[0];
+        byte[] key1 = emptyKeys ? new byte[0] : new byte[]{0x02, 0x01};
+        byte[] key2 = emptyKeys ? new byte[0] : new byte[]{0x02, 0x02};
+        byte[] key3 = emptyKeys ? new byte[0] : new byte[]{0x02, 0x03};
+
+        String sig1Hex = bytesToHex(sig1);
+        String sig2Hex = bytesToHex(sig2);
+        String key1Hex = bytesToHex(key1);
+        String key2Hex = bytesToHex(key2);
+        String key3Hex = bytesToHex(key3);
+
+        System.out.println("  scriptSig:    OP_0 <firma1> <firma2>");
+        System.out.println("  scriptPubKey: OP_2 <key1> <key2> <key3> OP_3 OP_CHECKMULTISIG");
+        System.out.println();
+
+        // scriptSig: OP_0 firma1 firma2
+        // scriptPubKey: OP_2 key1 key2 key3 OP_3 OP_CHECKMULTISIG
+        runSimpleScript(traceMode, Arrays.asList(
+            "OP_0",
+            sig1Hex.isEmpty() ? "00" : sig1Hex,
+            sig2Hex.isEmpty() ? "00" : sig2Hex,
+            "OP_2",
+            key1Hex.isEmpty() ? "00" : key1Hex,
+            key2Hex.isEmpty() ? "00" : key2Hex,
+            key3Hex.isEmpty() ? "00" : key3Hex,
+            "OP_3",
+            "OP_CHECKMULTISIG"
+        ));
+    }
+
+    /**
+     * Parsea y ejecuta un script arbitrario mostrando resultado.
      */
     private static void runSimpleScript(boolean traceMode, List<String> tokens) {
         ScriptParser      parser      = new ScriptParser();
         ScriptInterpreter interpreter = new ScriptInterpreter(traceMode);
-
-        List<ScriptToken> parsed = parser.parse(tokens);
+        List<ScriptToken> parsed      = parser.parse(tokens);
         boolean result = interpreter.execute(parsed);
 
         System.out.println();
@@ -146,36 +197,45 @@ public class Main {
         System.out.println("═════════════════════════════════════════════════════");
     }
 
-    /**
-     * Computa el HASH160 (SHA-256 seguido de RIPEMD-160) de un dato.
-     * Necesario para pre-calcular el pubKeyHash que va en el scriptPubKey
-     * de la prueba P2PKH, de modo que sea consistente con lo que hace
-     * CryptoComparisonOpcodes.opHash160().
-     *
-     * @param data los bytes de entrada (la clave pública mock)
-     * @return el hash resultante como string hexadecimal
-     */
+    // ─────────────────────────────────────────────────────────────────
+    //  Utilidades
+    // ─────────────────────────────────────────────────────────────────
+
+    private static void printHeader() {
+        System.out.println("══════════════════════════════════════════════════════");
+        System.out.println("  Proyecto #1 — Intérprete de Bitcoin Script | UVG");
+        System.out.println("  Fase 2 — Intérprete completo");
+        System.out.println("  Autores: Franco, Weslly, Sipac");
+        System.out.println("══════════════════════════════════════════════════════");
+        System.out.println();
+    }
+
+    private static void section(String block, String title) {
+        System.out.println();
+        System.out.println("▶ [" + block + "] " + title);
+        System.out.println("─────────────────────────────────────────────────────");
+    }
+
     private static String computeHash160Hex(byte[] data) {
         try {
             java.security.MessageDigest sha256 =
                     java.security.MessageDigest.getInstance("SHA-256");
             byte[] shaResult = sha256.digest(data);
-
             java.security.MessageDigest ripemd160 =
                     java.security.MessageDigest.getInstance("RIPEMD160");
             byte[] hash = ripemd160.digest(shaResult);
-
             StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
+            for (byte b : hash) sb.append(String.format("%02x", b));
             return sb.toString();
-
         } catch (java.security.NoSuchAlgorithmException e) {
-            // Fallback: si RIPEMD-160 no está disponible en la JVM,
-            // retornamos solo el SHA-256
-            throw new RuntimeException("RIPEMD-160 no disponible. " +
-                    "Asegúrate de tener BouncyCastle en el classpath.", e);
+            throw new RuntimeException("RIPEMD-160 no disponible.", e);
         }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        if (bytes.length == 0) return "";
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) sb.append(String.format("%02x", b));
+        return sb.toString();
     }
 }
