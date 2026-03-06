@@ -66,8 +66,8 @@ public enum OpcodeType {
     OP_HASH160      (0xa9),
     OP_HASH256      (0xaa),
     OP_CHECKSIG     (0xac),
-    OP_CHECKSIGVERIFY(0xad);
-
+    OP_CHECKSIGVERIFY(0xad),
+    OP_CHECKMULTISIG (0xae);
     // ─────────────────────────────────────────────────────────────────
 
     private final int hexCode;

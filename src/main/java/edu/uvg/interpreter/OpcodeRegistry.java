@@ -98,6 +98,12 @@ public class OpcodeRegistry {
         registry.put(OpcodeType.OP_NUMEQUALVERIFY, ArithmeticOpcodes.opNumEqualVerify());
         registry.put(OpcodeType.OP_LESSTHAN, ArithmeticOpcodes.opLessThan());
         registry.put(OpcodeType.OP_GREATERTHAN, ArithmeticOpcodes.opGreaterThan());
+
+        // ── Criptografía adicional ─────────────────────────────────────────
+        registry.put(OpcodeType.OP_SHA256, CryptoComparisonOpcodes.opSha256());
+        registry.put(OpcodeType.OP_HASH256, CryptoComparisonOpcodes.opHash256());
+        registry.put(OpcodeType.OP_CHECKSIGVERIFY, CryptoComparisonOpcodes.opCheckSigVerifyMock());
+        registry.put(OpcodeType.OP_CHECKMULTISIG, CryptoComparisonOpcodes.opCheckMultiSigMock());
     }
 
     /**
