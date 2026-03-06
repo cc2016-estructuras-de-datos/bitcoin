@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -151,5 +152,160 @@ class CryptoComparisonOpcodesTest extends BaseTest {
     void opCheckSigMock_emptyStack_throws() {
         assertThrows(EmptyStackException.class,
                 () -> CryptoComparisonOpcodes.opCheckSigMock().execute(stack, null));
+    }
+    
+    // ── OP_SHA256 ────────────────────────────────────────────────────
+
+    @Test
+    void opSha256_produces32Bytes() throws Exception {
+        stack.push("hola".getBytes());
+        CryptoComparisonOpcodes.opSha256().execute(stack, null);
+        assertEquals(32, stack.pop().length);
+    }
+
+    @Test
+    void opSha256_deterministic() throws Exception {
+        byte[] input = "bitcoin".getBytes();
+        stack.push(input.clone());
+        CryptoComparisonOpcodes.opSha256().execute(stack, null);
+        byte[] hash1 = stack.pop();
+
+        stack.push(input.clone());
+        CryptoComparisonOpcodes.opSha256().execute(stack, null);
+        byte[] hash2 = stack.pop();
+
+        assertArrayEquals(hash1, hash2);
+    }
+
+    @Test
+    void opSha256_differentInputs_differentHashes() throws Exception {
+        stack.push("input1".getBytes());
+        CryptoComparisonOpcodes.opSha256().execute(stack, null);
+        byte[] h1 = stack.pop();
+
+        stack.push("input2".getBytes());
+        CryptoComparisonOpcodes.opSha256().execute(stack, null);
+        byte[] h2 = stack.pop();
+
+        assertFalse(Arrays.equals(h1, h2));
+    }
+
+    @Test
+    void opSha256_emptyStack_throws() {
+        assertThrows(EmptyStackException.class,
+                () -> CryptoComparisonOpcodes.opSha256().execute(stack, null));
+    }
+
+    // ── OP_HASH256 ───────────────────────────────────────────────────
+
+    @Test
+    void opHash256_produces32Bytes() throws Exception {
+        stack.push("data".getBytes());
+        CryptoComparisonOpcodes.opHash256().execute(stack, null);
+        assertEquals(32, stack.pop().length);
+    }
+
+    @Test
+    void opHash256_differentFromSingleSha256() throws Exception {
+        byte[] input = "test".getBytes();
+
+        stack.push(input.clone());
+        CryptoComparisonOpcodes.opSha256().execute(stack, null);
+        byte[] singleHash = stack.pop();
+
+        stack.push(input.clone());
+        CryptoComparisonOpcodes.opHash256().execute(stack, null);
+        byte[] doubleHash = stack.pop();
+
+        assertFalse(Arrays.equals(singleHash, doubleHash),
+                "OP_HASH256 debe diferir de un SHA-256 simple");
+    }
+
+    @Test
+    void opHash256_emptyStack_throws() {
+        assertThrows(EmptyStackException.class,
+                () -> CryptoComparisonOpcodes.opHash256().execute(stack, null));
+    }
+
+    // ── OP_CHECKSIGVERIFY ────────────────────────────────────────────
+
+    @Test
+    void opCheckSigVerify_validSignatureAndKey_doesNotThrow() {
+        stack.push(new byte[]{0x02, 0x03}); // pubKey
+        stack.push(new byte[]{0x30, 0x45}); // firma
+        assertDoesNotThrow(
+                () -> CryptoComparisonOpcodes.opCheckSigVerifyMock().execute(stack, null));
+        assertTrue(stack.isEmpty());
+    }
+
+    @Test
+    void opCheckSigVerify_emptySignature_throws() {
+        stack.push(new byte[]{0x02, 0x03}); // pubKey
+        stack.push(new byte[0]);             // firma vacía
+        assertThrows(ScriptExecutionException.class,
+                () -> CryptoComparisonOpcodes.opCheckSigVerifyMock().execute(stack, null));
+    }
+
+    @Test
+    void opCheckSigVerify_emptyPublicKey_throws() {
+        stack.push(new byte[0]);             // pubKey vacía
+        stack.push(new byte[]{0x30, 0x45}); // firma
+        assertThrows(ScriptExecutionException.class,
+                () -> CryptoComparisonOpcodes.opCheckSigVerifyMock().execute(stack, null));
+    }
+
+    @Test
+    void opCheckSigVerify_emptyStack_throws() {
+        assertThrows(EmptyStackException.class,
+                () -> CryptoComparisonOpcodes.opCheckSigVerifyMock().execute(stack, null));
+    }
+
+    // ── OP_CHECKMULTISIG (mock) ───────────────────────────────────────
+
+    @Test
+    void opCheckMultiSig_2of3_allValid_pushesTrue() throws Exception {
+        // Protocolo (cima → fondo): OP_0 | firma1 | firma2 | 2 | key1 | key2 | key3 | 3
+        stack.push(edu.uvg.model.ScriptElement.fromInt(3).getData()); // N=3
+        stack.push(new byte[]{0x03});  // key3
+        stack.push(new byte[]{0x02});  // key2
+        stack.push(new byte[]{0x01});  // key1
+        stack.push(edu.uvg.model.ScriptElement.fromInt(2).getData()); // M=2
+        stack.push(new byte[]{0x30, 0x45}); // firma2
+        stack.push(new byte[]{0x30, 0x44}); // firma1
+        stack.push(new byte[0]);  // OP_0 extra (bug Bitcoin)
+
+        CryptoComparisonOpcodes.opCheckMultiSigMock().execute(stack, null);
+        assertArrayEquals(new byte[]{1}, stack.pop());
+    }
+
+    @Test
+    void opCheckMultiSig_1of2_validSignature_pushesTrue() throws Exception {
+        stack.push(edu.uvg.model.ScriptElement.fromInt(2).getData()); // N=2
+        stack.push(new byte[]{0x02});  // key2
+        stack.push(new byte[]{0x01});  // key1
+        stack.push(edu.uvg.model.ScriptElement.fromInt(1).getData()); // M=1
+        stack.push(new byte[]{0x30, 0x45}); // firma1
+        stack.push(new byte[0]);  // OP_0 extra
+
+        CryptoComparisonOpcodes.opCheckMultiSigMock().execute(stack, null);
+        assertArrayEquals(new byte[]{1}, stack.pop());
+    }
+
+    @Test
+    void opCheckMultiSig_emptySignature_pushesFalse() throws Exception {
+        stack.push(edu.uvg.model.ScriptElement.fromInt(1).getData()); // N=1
+        stack.push(new byte[]{0x01});  // key1
+        stack.push(edu.uvg.model.ScriptElement.fromInt(1).getData()); // M=1
+        stack.push(new byte[0]);  // firma vacía
+        stack.push(new byte[0]);  // OP_0 extra
+
+        CryptoComparisonOpcodes.opCheckMultiSigMock().execute(stack, null);
+        assertArrayEquals(new byte[0], stack.pop());
+    }
+
+    @Test
+    void opCheckMultiSig_emptyStack_throws() {
+        assertThrows(EmptyStackException.class,
+                () -> CryptoComparisonOpcodes.opCheckMultiSigMock().execute(stack, null));
     }
 }
