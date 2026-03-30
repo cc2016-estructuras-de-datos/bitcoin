@@ -201,6 +201,9 @@ public class Main {
     //  Utilidades
     // ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Imprime la cabecera de las demostraciones en consola.
+     */
     private static void printHeader() {
         System.out.println("══════════════════════════════════════════════════════");
         System.out.println("  Proyecto #1 — Intérprete de Bitcoin Script | UVG");
@@ -210,12 +213,24 @@ public class Main {
         System.out.println();
     }
 
+    /**
+     * Imprime un encabezado de sección para cada demostración.
+     *
+     * @param block identificador de bloque (A/B/C/Extra)
+     * @param title descripción breve del caso de prueba
+     */
     private static void section(String block, String title) {
         System.out.println();
         System.out.println("▶ [" + block + "] " + title);
         System.out.println("─────────────────────────────────────────────────────");
     }
 
+    /**
+     * Calcula el HASH160 en formato hexadecimal (RIPEMD160(SHA256(data))).
+     *
+     * @param data bytes de entrada
+     * @return hash160 en hex
+     */
     private static String computeHash160Hex(byte[] data) {
         try {
             java.security.MessageDigest sha256 =
@@ -232,6 +247,12 @@ public class Main {
         }
     }
 
+    /**
+     * Convierte un arreglo de bytes a su representación hexadecimal minúscula.
+     *
+     * @param bytes datos de entrada
+     * @return texto hexadecimal ("" si bytes está vacío)
+     */
     private static String bytesToHex(byte[] bytes) {
         if (bytes.length == 0) return "";
         StringBuilder sb = new StringBuilder();

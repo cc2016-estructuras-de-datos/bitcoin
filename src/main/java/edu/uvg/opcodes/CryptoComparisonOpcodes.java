@@ -199,68 +199,70 @@ public final class CryptoComparisonOpcodes {
      */
     public static OpcodeHandler opCheckMultiSigMock() {
         return (stack, operand) -> {
-            // Leer N (cantidad de claves públicas)
+            // Consumir el OP_0 extra (bug histórico de Bitcoin)
             if (stack.isEmpty()) {
-                throw new EmptyStackException(OpcodeType.OP_CHECKSIG);
+                throw new EmptyStackException(OpcodeType.OP_CHECKMULTISIG);
             }
-            int n = new edu.uvg.model.ScriptElement(stack.pop()).toInt();
-            if (n < 0 || n > 20) {
-                throw new ScriptExecutionException(OpcodeType.OP_CHECKSIG,
-                        "OP_CHECKMULTISIG: N inválido: " + n);
-            }
-
-            // Leer N claves públicas
-            if (stack.size() < n) {
-                throw new EmptyStackException(OpcodeType.OP_CHECKSIG);
-            }
-            byte[][] pubKeys = new byte[n][];
-            for (int i = 0; i < n; i++) {
-                pubKeys[i] = stack.pop();
-            }
+            stack.pop();
 
             // Leer M (cantidad de firmas requeridas)
             if (stack.isEmpty()) {
-                throw new EmptyStackException(OpcodeType.OP_CHECKSIG);
+                throw new EmptyStackException(OpcodeType.OP_CHECKMULTISIG);
             }
             int m = new edu.uvg.model.ScriptElement(stack.pop()).toInt();
-            if (m < 0 || m > n) {
-                throw new ScriptExecutionException(OpcodeType.OP_CHECKSIG,
-                        "OP_CHECKMULTISIG: M inválido (M=" + m + ", N=" + n + ")");
+            if (m < 0 || m > 20) {
+                throw new ScriptExecutionException(OpcodeType.OP_CHECKMULTISIG,
+                        "OP_CHECKMULTISIG: M inválido: " + m);
             }
 
             // Leer M firmas
             if (stack.size() < m) {
-                throw new EmptyStackException(OpcodeType.OP_CHECKSIG);
+                throw new EmptyStackException(OpcodeType.OP_CHECKMULTISIG);
             }
             byte[][] signatures = new byte[m][];
             for (int i = 0; i < m; i++) {
                 signatures[i] = stack.pop();
             }
 
-            // Consumir el OP_0 extra (bug histórico de Bitcoin)
-            if (!stack.isEmpty()) {
-                stack.pop();
+            // Leer N (cantidad de claves públicas)
+            if (stack.isEmpty()) {
+                throw new EmptyStackException(OpcodeType.OP_CHECKMULTISIG);
+            }
+            int n = new edu.uvg.model.ScriptElement(stack.pop()).toInt();
+            if (n < 0 || n > 20) {
+                throw new ScriptExecutionException(OpcodeType.OP_CHECKMULTISIG,
+                        "OP_CHECKMULTISIG: N inválido: " + n);
+            }
+            if (m > n) {
+                throw new ScriptExecutionException(OpcodeType.OP_CHECKMULTISIG,
+                        "OP_CHECKMULTISIG: M mayor que N (M=" + m + ", N=" + n + ")");
             }
 
-            // Validación mock: todas las firmas y al menos M claves deben ser no-vacías
-            boolean valid = true;
+            // Leer N claves públicas
+            if (stack.size() < n) {
+                throw new EmptyStackException(OpcodeType.OP_CHECKMULTISIG);
+            }
+            byte[][] pubKeys = new byte[n][];
+            for (int i = 0; i < n; i++) {
+                pubKeys[i] = stack.pop();
+            }
+
+            // Validación mock: todas las firmas son no-vacías y al menos M claves no-vacías
+            int validSignatures = 0;
+
             for (byte[] sig : signatures) {
-                if (sig.length == 0) {
-                    valid = false;
-                    break;
-                }
-            }
-            if (valid) {
-                int validKeys = 0;
-                for (byte[] key : pubKeys) {
-                    if (key.length > 0) {
-                        validKeys++;
-                    }
-                }
-                if (validKeys < m) {
-                    valid = false;
-                }
-            }
+                if (sig.length == 0) continue;
+
+                    for (byte[] key : pubKeys) {
+                        if (key.length == 0) continue;
+
+                        // Mock: si ambos no están vacíos, cuenta como válida
+                        validSignatures++;
+                        break; // una firma se usa una vez
+    }
+}
+
+boolean valid = validSignatures >= m;
 
             stack.push(valid ? new byte[]{1} : new byte[0]);
         };

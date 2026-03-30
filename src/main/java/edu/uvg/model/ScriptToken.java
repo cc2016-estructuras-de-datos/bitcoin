@@ -53,12 +53,34 @@ public class ScriptToken {
         this.raw       = raw;
     }
 
+    /**
+     * @return el tipo de token (OPCODE o DATA)
+     */
     public TokenType getTokenType() { return tokenType; }
+
+    /**
+     * @return el opcode asociado si es token OPCODE, null de otro modo
+     */
     public OpcodeType getOpcode()   { return opcode; }
+
+    /**
+     * @return el operando en bytes si es token DATA, null de otro modo
+     */
     public byte[] getOperand()      { return operand; }
+
+    /**
+     * @return representación en texto original del token (p.ej. "OP_DUP")
+     */
     public String getRaw()          { return raw; }
 
+    /**
+     * @return true si el token es un opcode
+     */
     public boolean isOpcode() { return tokenType == TokenType.OPCODE; }
+
+    /**
+     * @return true si el token es un dato literal
+     */
     public boolean isData()   { return tokenType == TokenType.DATA; }
 
     @Override
